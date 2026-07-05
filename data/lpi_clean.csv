@@ -1,0 +1,216 @@
+country,code,lpi_score
+Africa Eastern and Southern,AFE,2.49222222222222
+Afghanistan,AFG,1.95
+Africa Western and Central,AFW,2.41333333333333
+Angola,AGO,2.05
+Albania,ALB,2.66
+Arab World,ARB,2.67809523809524
+United Arab Emirates,ARE,3.96
+Argentina,ARG,2.89
+Armenia,ARM,2.61
+Australia,AUS,3.75
+Austria,AUT,4.03
+Azerbaijan,AZE,2.448376
+Burundi,BDI,2.06
+Belgium,BEL,4.04
+Benin,BEN,2.75
+Burkina Faso,BFA,2.62
+Bangladesh,BGD,2.58
+Bulgaria,BGR,3.03
+Bahrain,BHR,2.93
+"Bahamas, The",BHS,2.53
+Bosnia and Herzegovina,BIH,2.81
+Belarus,BLR,2.57
+Bolivia,BOL,2.36
+Brazil,BRA,2.99
+Brunei Darussalam,BRN,2.71
+Bhutan,BTN,2.17
+Botswana,BWA,3.045458
+Central African Republic,CAF,2.15
+Canada,CAN,3.73
+Central Europe and the Baltics,CEB,3.21545454545455
+Switzerland,CHE,3.9
+Chile,CHL,3.32
+China,CHN,3.61
+Cote d'Ivoire,CIV,3.08
+Cameroon,CMR,2.6
+"Congo, Dem. Rep.",COD,2.43
+"Congo, Rep.",COG,2.49
+Colombia,COL,2.94
+Comoros,COM,2.56
+Costa Rica,CRI,2.79
+Caribbean small states,CSS,2.43666666666667
+Cuba,CUB,2.2
+Cyprus,CYP,3.15
+Czechia,CZE,3.68
+Germany,DEU,4.2
+Djibouti,DJI,2.63
+Denmark,DNK,3.99
+Dominican Republic,DOM,2.66
+Algeria,DZA,2.45
+East Asia & Pacific (excluding high income),EAP,2.81538461538462
+Early-demographic dividend,EAR,2.63297872340426
+East Asia & Pacific,EAS,3.14761904761905
+Europe & Central Asia (excluding high income),ECA,2.656875
+Europe & Central Asia,ECS,3.24042553191489
+Ecuador,ECU,2.88
+"Egypt, Arab Rep.",EGY,2.82
+Euro area,EMU,3.5095
+Eritrea,ERI,2.09
+Spain,ESP,3.83
+Estonia,EST,3.31
+Ethiopia,ETH,2.376767
+European Union,EUU,3.51925925925926
+Fragile and conflict affected situations,FCS,2.35
+Finland,FIN,3.97
+Fiji,FJI,2.35
+France,FRA,3.84
+Gabon,GAB,2.16
+United Kingdom,GBR,3.99
+Georgia,GEO,2.44
+Ghana,GHA,2.57
+Guinea,GIN,2.2
+"Gambia, The",GMB,2.4
+Guinea-Bissau,GNB,2.39
+Equatorial Guinea,GNQ,2.32
+Greece,GRC,3.2
+Guatemala,GTM,2.41
+Guyana,GUY,2.36
+High income,HIC,3.42589285714286
+"Hong Kong SAR, China",HKG,3.92
+Honduras,HND,2.6
+Heavily indebted poor countries (HIPC),HPC,2.41542857142857
+Croatia,HRV,3.1
+Haiti,HTI,2.11
+Hungary,HUN,3.42
+IBRD only,IBD,2.77155172413793
+IDA & IBRD total,IBT,2.60491228070175
+IDA total,IDA,2.43232142857143
+IDA blend,IDB,2.515
+Indonesia,IDN,3.15
+IDA only,IDX,2.41434782608696
+India,IND,3.18
+Ireland,IRL,3.51
+"Iran, Islamic Rep.",IRN,2.85
+Iraq,IRQ,2.18
+Iceland,ISL,3.23
+Israel,ISR,3.31
+Italy,ITA,3.74
+Jamaica,JAM,2.52
+Jordan,JOR,2.69
+Japan,JPN,4.03
+Kazakhstan,KAZ,2.81
+Kenya,KEN,2.81
+Kyrgyz Republic,KGZ,2.55
+Cambodia,KHM,2.58
+"Korea, Rep.",KOR,3.61
+Kuwait,KWT,2.86
+Latin America & Caribbean (excluding high income),LAC,2.644
+Lao PDR,LAO,2.7
+Lebanon,LBN,2.72
+Liberia,LBR,2.23
+Libya,LBY,2.11
+Latin America & Caribbean,LCN,2.66434782608696
+Least developed countries: UN classification,LDC,2.38648648648649
+Low income,LIC,2.34863636363636
+Sri Lanka,LKA,2.6
+Lower middle income,LMC,2.54292682926829
+Low & middle income,LMY,2.56815533980583
+Lesotho,LSO,2.28
+Late-demographic dividend,LTE,2.89372093023256
+Lithuania,LTU,3.02
+Luxembourg,LUX,3.63
+Latvia,LVA,2.81
+Morocco,MAR,2.54
+Moldova,MDA,2.46
+Madagascar,MDG,2.39
+Maldives,MDV,2.67
+"Middle East, North Africa, Afghanistan & Pakistan",MEA,2.72954545454545
+Mexico,MEX,3.05
+Middle income,MIC,2.62777777777778
+North Macedonia,MKD,2.7
+Mali,MLI,2.59
+Malta,MLT,2.81
+Myanmar,MMR,2.3
+"Middle East, North Africa, Afghanistan & Pakistan (excluding high income)",MNA,2.46428571428571
+Montenegro,MNE,2.75
+Mongolia,MNG,2.37
+Mozambique,MOZ,2.684105
+Mauritania,MRT,2.33
+Mauritius,MUS,2.73
+Malawi,MWI,2.59
+Malaysia,MYS,3.22
+North America,NAC,3.81
+Namibia,NAM,2.744745
+Niger,NER,2.07
+Nigeria,NGA,2.53
+Nicaragua,NIC,2.531062
+Netherlands,NLD,4.02
+Norway,NOR,3.7
+Nepal,NPL,2.51
+New Zealand,NZL,3.88
+OECD members,OED,3.58105263157895
+Oman,OMN,3.2
+Other small states,OSS,2.78083333333333
+Pakistan,PAK,2.42
+Panama,PAN,3.28
+Peru,PER,2.69
+Philippines,PHL,2.9
+Papua New Guinea,PNG,2.17
+Poland,POL,3.54
+Pre-demographic dividend,PRE,2.38818181818182
+Portugal,PRT,3.64
+Paraguay,PRY,2.78
+Pacific island small states,PSS,2.46
+Post-demographic dividend,PST,3.58171428571429
+Qatar,QAT,3.47
+Romania,ROU,3.12
+Russian Federation,RUS,2.76
+Rwanda,RWA,2.97
+South Asia,SAS,2.61833333333333
+Saudi Arabia,SAU,3.01
+Sudan,SDN,2.43
+Senegal,SEN,2.25
+Singapore,SGP,4.0
+Solomon Islands,SLB,2.57
+Sierra Leone,SLE,2.08
+El Salvador,SLV,2.58
+"Somalia, Fed. Rep.",SOM,2.21
+Serbia,SRB,2.84
+Sub-Saharan Africa (excluding high income),SSA,2.44974358974359
+Sub-Saharan Africa,SSF,2.44974358974359
+Small states,SST,2.68235294117647
+Sao Tome and Principe,STP,2.65
+Slovak Republic,SVK,3.03
+Slovenia,SVN,3.31
+Sweden,SWE,4.05
+Syrian Arab Republic,SYR,2.3
+Chad,TCD,2.42
+East Asia & Pacific (IDA & IBRD countries),TEA,2.81538461538462
+Europe & Central Asia (IDA & IBRD countries),TEC,2.7647619047619
+Togo,TGO,2.45
+Thailand,THA,3.41
+Tajikistan,TJK,2.34
+Turkmenistan,TKM,2.41
+Latin America & the Caribbean (IDA & IBRD countries),TLA,2.69285714285714
+Timor-Leste,TLS,1.71
+"Middle East, North Africa, Afghanistan & Pakistan (IDA & IBRD)",TMN,2.46428571428571
+South Asia (IDA & IBRD),TSA,2.61833333333333
+Sub-Saharan Africa (IDA & IBRD countries),TSS,2.44974358974359
+Trinidad and Tobago,TTO,2.42
+Tunisia,TUN,2.57
+Turkiye,TUR,3.15
+Tanzania,TZA,2.990185
+Uganda,UGA,2.58
+Ukraine,UKR,2.83
+Upper middle income,UMC,2.71475
+Uruguay,URY,2.69
+United States,USA,3.89
+Uzbekistan,UZB,2.58
+"Venezuela, RB",VEN,2.23
+Viet Nam,VNM,3.27
+World,WLD,2.86625
+"Yemen, Rep.",YEM,2.27
+South Africa,ZAF,3.38
+Zambia,ZMB,2.53
+Zimbabwe,ZWE,2.12
