@@ -12,3 +12,7 @@ __pycache__/
 Thumbs.db
 
 data/gdelt_raw/
+data/gdelt_clean.csv
+data/gdelt_raw/
+data/comtrade_raw.csv
+catboost_info/
