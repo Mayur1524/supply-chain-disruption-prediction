@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 from xgboost import XGBClassifier
+from catboost import CatBoostClassifier
 import joblib
 import os
 
@@ -44,7 +45,8 @@ gdelt_agg.columns = ["code", "event_count", "avg_tone", "avg_goldstein"]
 lpi["code"] = lpi["code"].astype(str)
 
 features = ct_sorted.merge(lpi, left_on="iso_code", right_on="code", how="left")
-features = features.merge(gdelt_agg, left_on="iso_code", right_on="code", how="left", suffixes=("", "_gdelt"))
+features = features.merge(gdelt_agg, left_on="iso_code", right_on="code",
+                          how="left", suffixes=("", "_gdelt"))
 
 features["lpi_score"] = features["lpi_score"].fillna(features["lpi_score"].mean())
 features["event_count"] = features["event_count"].fillna(0)
@@ -59,7 +61,7 @@ years = features["year"]
 print(f"\n  Final dataset: {X.shape[0]} rows, {X.shape[1]} features")
 print(f"  Risk distribution: {y.value_counts().to_dict()}")
 
-# ── TIME-BASED SPLIT: train on earlier years, test on the most recent year ──
+# ── TIME-BASED SPLIT ──────────────────────────────────
 max_year = years.max()
 train_mask = years < max_year
 test_mask = years == max_year
@@ -77,8 +79,9 @@ if y_train.nunique() < 2 or y_test.nunique() < 2:
     exit()
 
 # ── Train Random Forest ───────────────────────────────
-print("\nTraining Random Forest (time-based split)...")
-rf = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1, class_weight="balanced")
+print("\nTraining Random Forest...")
+rf = RandomForestClassifier(n_estimators=200, random_state=42,
+                             n_jobs=-1, class_weight="balanced")
 rf.fit(X_train, y_train)
 rf_preds = rf.predict(X_test)
 print(f"  Accuracy: {accuracy_score(y_test, rf_preds):.3f}")
@@ -86,7 +89,7 @@ print(f"  F1:       {f1_score(y_test, rf_preds):.3f}")
 print(classification_report(y_test, rf_preds))
 
 # ── Train XGBoost ─────────────────────────────────────
-print("\nTraining XGBoost (time-based split)...")
+print("\nTraining XGBoost...")
 scale_pos_weight = (y_train == 0).sum() / max((y_train == 1).sum(), 1)
 xgb = XGBClassifier(n_estimators=200, learning_rate=0.05,
                      random_state=42, eval_metric="logloss",
@@ -98,11 +101,41 @@ print(f"  Accuracy: {accuracy_score(y_test, xgb_preds):.3f}")
 print(f"  F1:       {f1_score(y_test, xgb_preds):.3f}")
 print(classification_report(y_test, xgb_preds))
 
-# ── Save models ───────────────────────────────────────
+# ── Train CatBoost ────────────────────────────────────
+print("\nTraining CatBoost...")
+cat = CatBoostClassifier(
+    iterations=200,
+    learning_rate=0.05,
+    depth=6,
+    random_seed=42,
+    verbose=0,
+    auto_class_weights="Balanced"
+)
+cat.fit(X_train, y_train)
+cat_preds = cat.predict(X_test)
+print(f"  Accuracy: {accuracy_score(y_test, cat_preds):.3f}")
+print(f"  F1:       {f1_score(y_test, cat_preds):.3f}")
+print(classification_report(y_test, cat_preds))
+
+# ── Save all models ───────────────────────────────────
 joblib.dump(rf, "ml/model_rf.pkl")
 joblib.dump(xgb, "ml/model_xgb.pkl")
+joblib.dump(cat, "ml/model_cat.pkl")
 X.to_csv("ml/features.csv", index=False)
 y.to_csv("ml/labels.csv", index=False)
+print("\nAll models saved to ml/ folder")
 
-print("\nModels saved to ml/ folder")
-print("Phase 4 complete — evaluated with genuine forward-time prediction!")
+# ── Summary comparison ────────────────────────────────
+print("\n" + "="*50)
+print("MODEL COMPARISON SUMMARY")
+print("="*50)
+print(f"Random Forest: Accuracy={accuracy_score(y_test, rf_preds):.3f}  F1={f1_score(y_test, rf_preds):.3f}")
+print(f"XGBoost:       Accuracy={accuracy_score(y_test, xgb_preds):.3f}  F1={f1_score(y_test, xgb_preds):.3f}")
+print(f"CatBoost:      Accuracy={accuracy_score(y_test, cat_preds):.3f}  F1={f1_score(y_test, cat_preds):.3f}")
+print("="*50)
+print("\nBest model: " + max(
+    [("Random Forest", f1_score(y_test, rf_preds)),
+     ("XGBoost",       f1_score(y_test, xgb_preds)),
+     ("CatBoost",      f1_score(y_test, cat_preds))],
+    key=lambda x: x[1]
+)[0])

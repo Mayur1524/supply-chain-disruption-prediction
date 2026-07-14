@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Risk Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.26.0/plotly.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #3b82f6; --accent2: #06b6d4;
+    --low: #10b981; --medium: #f59e0b; --high: #ef4444;
+    --text: #f1f5f9; --muted: #64748b; --mono: 'JetBrains Mono', monospace;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: linear-gradient(135deg,#0a0f1e,#0f172a,#0a1628); border-bottom: 1px solid var(--border); padding: 0 2rem; position: sticky; top: 0; z-index: 100; }
+  .header-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-text { font-size: 16px; font-weight: 600; }
+  .logo-sub { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .status-pill { display: flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--low); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--low); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .hero { background: linear-gradient(135deg,#0a0f1e,#0d1b2e,#0a1525); padding: 4rem 2rem 2rem; text-align: center; position: relative; overflow: hidden; }
+  .hero::before { content:''; position:absolute; top:-50%; left:50%; transform:translateX(-50%); width:600px; height:600px; background:radial-gradient(circle,rgba(59,130,246,0.08),transparent 70%); pointer-events:none; }
+  .hero-tag { display:inline-flex; align-items:center; gap:6px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); color:var(--accent); padding:4px 14px; border-radius:20px; font-size:12px; font-weight:500; letter-spacing:0.5px; margin-bottom:1.5rem; }
+  .hero h1 { font-size:clamp(2rem,5vw,3.5rem); font-weight:700; letter-spacing:-1.5px; line-height:1.1; margin-bottom:1rem; background:linear-gradient(135deg,#f1f5f9,#94a3b8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero p { font-size:1.1rem; color:var(--muted); max-width:600px; margin:0 auto 2.5rem; line-height:1.7; font-weight:300; }
+  .hero-stats { display:flex; justify-content:center; gap:3rem; margin-bottom:2rem; }
+  .stat-num { font-size:2rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+  .main { max-width:1400px; margin:0 auto; padding:2rem; }
+  .grid { display:grid; grid-template-columns:340px 1fr; gap:1.5rem; align-items:start; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .panel-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .panel-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .panel-title { font-size:13px; font-weight:600; }
+  .panel-body { padding:1.5rem; }
+  .form-group { margin-bottom:1.25rem; }
+  label { display:block; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+  select, input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px 14px; font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; appearance:none; }
+  select:focus, input:focus { border-color:var(--accent); }
+  input[type="range"] { padding:0; height:4px; cursor:pointer; accent-color:var(--accent); background:var(--border); border:none; }
+  .range-row { display:flex; align-items:center; gap:10px; }
+  .range-val { font-family:var(--mono); font-size:13px; color:var(--accent); min-width:40px; text-align:right; }
+  .btn { width:100%; padding:12px; background:linear-gradient(135deg,var(--accent),#2563eb); border:none; border-radius:10px; color:white; font-size:14px; font-weight:600; cursor:pointer; transition:opacity 0.2s,transform 0.1s; margin-top:0.5rem; }
+  .btn:hover { opacity:0.9; } .btn:active { transform:scale(0.98); } .btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .result-card { background:var(--surface2); border-radius:12px; padding:1.25rem; margin-top:1.25rem; border:1px solid var(--border); display:none; }
+  .result-card.visible { display:block; }
+  .score-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .score-big { font-size:3rem; font-weight:700; font-family:var(--mono); line-height:1; }
+  .risk-badge { padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600; letter-spacing:0.5px; }
+  .risk-LOW { background:rgba(16,185,129,0.15); color:var(--low); border:1px solid rgba(16,185,129,0.3); }
+  .risk-MEDIUM { background:rgba(245,158,11,0.15); color:var(--medium); border:1px solid rgba(245,158,11,0.3); }
+  .risk-HIGH { background:rgba(239,68,68,0.15); color:var(--high); border:1px solid rgba(239,68,68,0.3); }
+  .score-bar-wrap { background:var(--border); border-radius:4px; height:6px; margin-bottom:1rem; overflow:hidden; }
+  .score-bar { height:100%; border-radius:4px; transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .metrics-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .metric { background:var(--surface); border-radius:8px; padding:10px 12px; }
+  .metric-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px; }
+  .metric-val { font-family:var(--mono); font-size:14px; font-weight:500; }
+  .section-divider { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); }
+  .section-title { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+  .confluence-item { background:var(--surface); border-radius:8px; padding:10px 12px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; }
+  .confluence-source { font-weight:600; font-size:12px; margin-bottom:2px; }
+  .confluence-product { color:var(--muted); font-size:11px; }
+  .confluence-risk { font-family:var(--mono); font-size:12px; padding:3px 8px; border-radius:6px; }
+  .reasoning-summary { font-size:13px; color:var(--muted); margin-bottom:10px; line-height:1.6; padding:10px 12px; background:var(--surface); border-radius:8px; }
+  .driver-item { font-size:12px; color:var(--text); padding:6px 10px; margin-bottom:4px; background:rgba(239,68,68,0.07); border-left:2px solid #ef4444; border-radius:0 6px 6px 0; }
+  .positive-item { font-size:12px; color:var(--text); padding:6px 10px; margin-bottom:4px; background:rgba(16,185,129,0.07); border-left:2px solid #10b981; border-radius:0 6px 6px 0; }
+  .driver-label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; margin:8px 0 4px; }
+  .dominant-box { margin-top:8px; padding:8px 12px; background:var(--surface); border-radius:8px; font-size:11px; color:var(--muted); }
+  .map-panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .map-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .map-title { font-size:13px; font-weight:600; }
+  .map-legend { display:flex; gap:1rem; }
+  .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; }
+  #world-map { height:420px; width:100%; }
+  .history-panel { margin-top:1.5rem; background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .history-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:10px 1.5rem; text-align:left; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; background:var(--surface2); border-bottom:1px solid var(--border); }
+  td { padding:12px 1.5rem; font-size:13px; border-bottom:1px solid var(--border); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface2); }
+  .mono { font-family:var(--mono); }
+  .spinner { display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.6s linear infinite; margin:0 auto; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .btn.loading .btn-text { display:none; }
+  .btn.loading .spinner { display:inline-block; }
+  @media (max-width:900px) { .grid { grid-template-columns:1fr; } .hero-stats { gap:1.5rem; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🌐</div>
+      <div>
+        <div class="logo-text">SupplyChain Risk Monitor</div>
+        <div class="logo-sub">Hybrid ML + Knowledge Graph Engine</div>
+      </div>
+    </div>
+    <div class="status-pill"><div class="status-dot"></div>API Online</div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-tag">🎓 MSc Data Science · University of Southampton</div>
+  <h1>Supply Chain<br>Disruption Prediction</h1>
+  <p>Real-time risk scoring powered by a hybrid CatBoost + Neo4j Knowledge Graph engine, combining geopolitical event data with trade provenance tracking.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">10</div><div class="stat-label">Countries</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Products</div></div>
+    <div class="stat"><div class="stat-num">1.4M+</div><div class="stat-label">GDELT Events</div></div>
+    <div class="stat"><div class="stat-num">69.8%</div><div class="stat-label">Model Accuracy</div></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon" style="background:rgba(59,130,246,0.15)">🎯</div>
+          <div class="panel-title">Risk Score Calculator</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Country</label>
+            <select id="country">
+              <option value="CHN">🇨🇳 China</option>
+              <option value="USA">🇺🇸 United States</option>
+              <option value="DEU" selected>🇩🇪 Germany</option>
+              <option value="IND">🇮🇳 India</option>
+              <option value="JPN">🇯🇵 Japan</option>
+              <option value="KOR">🇰🇷 South Korea</option>
+              <option value="GBR">🇬🇧 United Kingdom</option>
+              <option value="FRA">🇫🇷 France</option>
+              <option value="THA">🇹🇭 Thailand</option>
+              <option value="MYS">🇲🇾 Malaysia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>LPI Score (Logistics Performance)</label>
+            <div class="range-row">
+              <input type="range" id="lpi" min="1" max="5" step="0.1" value="3.6" oninput="document.getElementById('lpi-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span class="range-val" id="lpi-val">3.6</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Previous Trade Value (USD Billions)</label>
+            <div class="range-row">
+              <input type="range" id="prev-val" min="1" max="500" step="1" value="65" oninput="document.getElementById('prev-val-display').textContent='$'+this.value+'B'">
+              <span class="range-val" id="prev-val-display">$65B</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>GDELT Event Count</label>
+            <div class="range-row">
+              <input type="range" id="events" min="0" max="20000" step="100" value="5000" oninput="document.getElementById('events-val').textContent=parseInt(this.value).toLocaleString()">
+              <span class="range-val" id="events-val">5,000</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Average News Tone</label>
+            <div class="range-row">
+              <input type="range" id="tone" min="-10" max="10" step="0.1" value="-1.2" oninput="document.getElementById('tone-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span class="range-val" id="tone-val">-1.2</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Goldstein Conflict Scale</label>
+            <div class="range-row">
+              <input type="range" id="goldstein" min="-10" max="10" step="0.1" value="0.9" oninput="document.getElementById('gold-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span class="range-val" id="gold-val">0.9</span>
+            </div>
+          </div>
+          <button class="btn" id="score-btn" onclick="getScore()">
+            <span class="btn-text">Calculate Risk Score</span>
+            <span class="spinner"></span>
+          </button>
+
+          <div class="result-card" id="result-card">
+            <div class="score-row">
+              <div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Risk Score</div>
+                <div class="score-big" id="score-num">--</div>
+              </div>
+              <div id="risk-badge" class="risk-badge">--</div>
+            </div>
+            <div class="score-bar-wrap">
+              <div class="score-bar" id="score-bar" style="width:0%"></div>
+            </div>
+            <div class="metrics-grid">
+              <div class="metric"><div class="metric-label">ML Probability</div><div class="metric-val mono" id="ml-prob">--</div></div>
+              <div class="metric"><div class="metric-label">KG Risk Events</div><div class="metric-val mono" id="kg-events">--</div></div>
+              <div class="metric"><div class="metric-label">KG Avg Severity</div><div class="metric-val mono" id="kg-severity">--</div></div>
+              <div class="metric"><div class="metric-label">Country</div><div class="metric-val mono" id="result-country">--</div></div>
+            </div>
+
+            <!-- CONFLUENCE -->
+            <div class="section-divider" id="confluence-section" style="display:none">
+              <div class="section-title">⚡ Confluence Supply Inputs</div>
+              <div id="confluence-items"></div>
+            </div>
+
+            <!-- REASONING -->
+            <div class="section-divider" id="reasoning-section" style="display:none">
+              <div class="section-title">🧠 AI Reasoning</div>
+              <div class="reasoning-summary" id="reasoning-summary"></div>
+              <div id="reasoning-drivers"></div>
+              <div id="reasoning-positives"></div>
+              <div class="dominant-box">
+                Dominant factor: <span id="dominant-factor" style="font-family:var(--mono);color:var(--accent)"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="map-panel">
+        <div class="map-header">
+          <div class="map-title">🗺️ Global Supply Chain Risk Map</div>
+          <div class="map-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div>Low</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div>Medium</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High</div>
+          </div>
+        </div>
+        <div id="world-map"></div>
+      </div>
+
+      <div class="history-panel">
+        <div class="history-header">📋 Risk Score History</div>
+        <table>
+          <thead>
+            <tr><th>Country</th><th>Risk Score</th><th>Level</th><th>ML Prob</th><th>KG Events</th><th>Time</th></tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No scores calculated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const countryNames = {
+  CHN:'China', USA:'United States', DEU:'Germany', IND:'India',
+  JPN:'Japan', KOR:'South Korea', GBR:'United Kingdom',
+  FRA:'France', THA:'Thailand', MYS:'Malaysia'
+};
+
+let mapScores = {};
+
+function initMap() {
+  Plotly.newPlot('world-map', [{
+    type:'choropleth', locationmode:'ISO-3',
+    locations:[], z:[], text:[],
+    colorscale:[[0,'#10b981'],[0.5,'#f59e0b'],[1,'#ef4444']],
+    zmin:0, zmax:100, showscale:true,
+    colorbar:{ title:{text:'Risk Score',font:{color:'#94a3b8',size:11}}, tickfont:{color:'#94a3b8',size:10}, bgcolor:'rgba(0,0,0,0)', bordercolor:'#1e2d45', thickness:12 },
+    marker:{ line:{ color:'#1e2d45', width:0.5 } }
+  }], {
+    geo:{ showframe:false, showcoastlines:true, coastlinecolor:'#1e2d45', showland:true, landcolor:'#111827', showocean:true, oceancolor:'#0a0f1e', showcountries:true, countrycolor:'#1e2d45', bgcolor:'#0a0f1e', projection:{type:'natural earth'} },
+    paper_bgcolor:'#111827', plot_bgcolor:'#111827',
+    margin:{t:10,b:10,l:10,r:10}, font:{color:'#94a3b8'}
+  }, { displayModeBar:false, responsive:true });
+}
+
+function updateMap(code, score) {
+  mapScores[code] = score;
+  Plotly.update('world-map', {
+    locations:[Object.keys(mapScores)],
+    z:[Object.values(mapScores)],
+    text:[Object.keys(mapScores).map(c => `${countryNames[c]}<br>Risk: ${mapScores[c]}/100`)]
+  }, {}, [0]);
+}
+
+async function getScore() {
+  const btn = document.getElementById('score-btn');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  const code = document.getElementById('country').value;
+  const lpi = parseFloat(document.getElementById('lpi').value);
+  const prev = parseFloat(document.getElementById('prev-val').value) * 1e9;
+  const events = parseInt(document.getElementById('events').value);
+  const tone = parseFloat(document.getElementById('tone').value);
+  const gold = parseFloat(document.getElementById('goldstein').value);
+
+  try {
+    const res = await fetch('/risk-score', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ country_code:code, lpi_score:lpi, prev_value:prev, event_count:events, avg_tone:tone, avg_goldstein:gold })
+    });
+    const data = await res.json();
+    displayResult(data);
+    updateMap(code, data.risk_score);
+    addHistory(data);
+  } catch(e) { alert('API Error: ' + e.message); }
+
+  btn.classList.remove('loading'); btn.disabled = false;
+}
+
+function displayResult(data) {
+  document.getElementById('result-card').classList.add('visible');
+  document.getElementById('score-num').textContent = data.risk_score;
+  document.getElementById('result-country').textContent = data.country_code;
+  document.getElementById('ml-prob').textContent = (data.ml_probability*100).toFixed(1)+'%';
+  document.getElementById('kg-events').textContent = data.kg_risk_events;
+  document.getElementById('kg-severity').textContent = data.kg_avg_severity;
+
+  const badge = document.getElementById('risk-badge');
+  badge.textContent = data.risk_level;
+  badge.className = 'risk-badge risk-' + data.risk_level;
+
+  const color = data.risk_score >= 70 ? '#ef4444' : data.risk_score >= 40 ? '#f59e0b' : '#10b981';
+  const bar = document.getElementById('score-bar');
+  bar.style.width = data.risk_score + '%';
+  bar.style.background = `linear-gradient(90deg,${color}88,${color})`;
+  document.getElementById('score-num').style.color = color;
+
+  // Confluence
+  const confSection = document.getElementById('confluence-section');
+  const confItems = document.getElementById('confluence-items');
+  if (data.confluence_inputs && data.confluence_inputs.length > 0) {
+    confSection.style.display = 'block';
+    confItems.innerHTML = data.confluence_inputs.map(c => {
+      const rc = c.source_risk > 20 ? '#ef4444' : c.source_risk > 5 ? '#f59e0b' : '#10b981';
+      return `<div class="confluence-item">
+        <div><div class="confluence-source">${c.source}</div><div class="confluence-product">${c.product} → ${c.finished_product}</div></div>
+        <div class="confluence-risk" style="background:${rc}22;color:${rc};border:1px solid ${rc}44">${c.source_risk} events</div>
+      </div>`;
+    }).join('');
+  } else { confSection.style.display = 'none'; }
+
+  // Reasoning
+  if (data.reasoning) {
+    document.getElementById('reasoning-section').style.display = 'block';
+    document.getElementById('reasoning-summary').textContent = data.reasoning.summary;
+    document.getElementById('dominant-factor').textContent = data.reasoning.dominant_factor;
+
+    const driversEl = document.getElementById('reasoning-drivers');
+    driversEl.innerHTML = data.reasoning.risk_drivers.length > 0
+      ? '<div class="driver-label" style="color:#ef4444">⚠ Risk Drivers</div>' +
+        data.reasoning.risk_drivers.map(r => `<div class="driver-item">${r}</div>`).join('')
+      : '';
+
+    const posEl = document.getElementById('reasoning-positives');
+    posEl.innerHTML = data.reasoning.stabilising_factors.length > 0
+      ? '<div class="driver-label" style="color:#10b981">✓ Stabilising Factors</div>' +
+        data.reasoning.stabilising_factors.map(r => `<div class="positive-item">${r}</div>`).join('')
+      : '';
+  }
+}
+
+const historyRows = [];
+function addHistory(data) {
+  historyRows.unshift({...data, time: new Date().toLocaleTimeString()});
+  if (historyRows.length > 10) historyRows.pop();
+  document.getElementById('history-body').innerHTML = historyRows.map(r =>
+    `<tr>
+      <td class="mono">${r.country_code}</td>
+      <td><span class="mono" style="color:${r.risk_score>=70?'#ef4444':r.risk_score>=40?'#f59e0b':'#10b981'}">${r.risk_score}</span></td>
+      <td><span class="risk-badge risk-${r.risk_level}" style="font-size:11px;padding:3px 10px">${r.risk_level}</span></td>
+      <td class="mono">${(r.ml_probability*100).toFixed(1)}%</td>
+      <td class="mono">${r.kg_risk_events}</td>
+      <td style="color:var(--muted);font-size:12px">${r.time}</td>
+    </tr>`
+  ).join('');
+}
+
+initMap();
+</script>
+</body>
+</html>
