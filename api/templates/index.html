@@ -73,14 +73,21 @@
   .positive-item { font-size:12px; color:var(--text); padding:6px 10px; margin-bottom:4px; background:rgba(16,185,129,0.07); border-left:2px solid #10b981; border-radius:0 6px 6px 0; }
   .driver-label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; margin:8px 0 4px; }
   .dominant-box { margin-top:8px; padding:8px 12px; background:var(--surface); border-radius:8px; font-size:11px; color:var(--muted); }
+  .news-item { padding:8px 10px; margin-bottom:6px; background:var(--surface); border-radius:8px; border-left:2px solid var(--accent); cursor:pointer; text-decoration:none; display:block; transition:border-color 0.2s; }
+  .news-item:hover { border-color:var(--accent2); }
+  .news-title { font-size:12px; color:var(--text); line-height:1.4; margin-bottom:4px; }
+  .news-meta { font-size:10px; color:var(--muted); }
+  .news-loading { font-size:12px; color:var(--muted); padding:8px; text-align:center; }
   .map-panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-  .map-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .map-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   .map-title { font-size:13px; font-weight:600; }
+  .map-hint { font-size:11px; color:var(--accent); background:rgba(59,130,246,0.1); padding:3px 10px; border-radius:10px; border:1px solid rgba(59,130,246,0.2); }
   .map-legend { display:flex; gap:1rem; }
   .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
   .legend-dot { width:8px; height:8px; border-radius:50%; }
-  #world-map { height:420px; width:100%; }
-  .history-panel { margin-top:1.5rem; background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  #world-map { height:380px; width:100%; }
+  #route-map { height:400px; width:100%; }
+  .history-panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
   .history-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; }
   table { width:100%; border-collapse:collapse; }
   th { padding:10px 1.5rem; text-align:left; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; background:var(--surface2); border-bottom:1px solid var(--border); }
@@ -92,10 +99,20 @@
   @keyframes spin { to { transform:rotate(360deg); } }
   .btn.loading .btn-text { display:none; }
   .btn.loading .spinner { display:inline-block; }
+  .right-col { display:flex; flex-direction:column; gap:1.5rem; }
+  .route-filter-bar { display:flex; gap:8px; flex-wrap:wrap; padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .filter-btn { padding:4px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-size:11px; cursor:pointer; transition:all 0.15s; font-family:'Inter',sans-serif; }
+  .filter-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+  .route-stats { display:flex; gap:1.5rem; padding:0.75rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .route-stat { font-size:11px; color:var(--muted); }
+  .route-stat span { color:var(--text); font-family:var(--mono); font-weight:500; }
+  .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:var(--accent); color:white; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:500; z-index:1000; opacity:0; transition:opacity 0.3s; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; }
   @media (max-width:900px) { .grid { grid-template-columns:1fr; } .hero-stats { gap:1.5rem; } }
 </style>
 </head>
 <body>
+<div class="toast" id="toast"></div>
 <header>
   <div class="header-inner">
     <div class="logo">
@@ -108,7 +125,6 @@
     <div class="status-pill"><div class="status-dot"></div>API Online</div>
   </div>
 </header>
-
 <div class="hero">
   <div class="hero-tag">🎓 MSc Data Science · University of Southampton</div>
   <h1>Supply Chain<br>Disruption Prediction</h1>
@@ -120,9 +136,9 @@
     <div class="stat"><div class="stat-num">69.8%</div><div class="stat-label">Model Accuracy</div></div>
   </div>
 </div>
-
 <div class="main">
   <div class="grid">
+    <!-- LEFT PANEL -->
     <div>
       <div class="panel">
         <div class="panel-header">
@@ -132,7 +148,7 @@
         <div class="panel-body">
           <div class="form-group">
             <label>Country</label>
-            <select id="country">
+            <select id="country" onchange="onCountryChange()">
               <option value="CHN">🇨🇳 China</option>
               <option value="USA">🇺🇸 United States</option>
               <option value="DEU" selected>🇩🇪 Germany</option>
@@ -146,38 +162,38 @@
             </select>
           </div>
           <div class="form-group">
-            <label>LPI Score (Logistics Performance)</label>
+            <label>LPI Score</label>
             <div class="range-row">
-              <input type="range" id="lpi" min="1" max="5" step="0.1" value="3.6" oninput="document.getElementById('lpi-val').textContent=parseFloat(this.value).toFixed(1)">
-              <span class="range-val" id="lpi-val">3.6</span>
+              <input type="range" id="lpi" min="1" max="5" step="0.1" value="4.2" oninput="document.getElementById('lpi-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span class="range-val" id="lpi-val">4.2</span>
             </div>
           </div>
           <div class="form-group">
             <label>Previous Trade Value (USD Billions)</label>
             <div class="range-row">
-              <input type="range" id="prev-val" min="1" max="500" step="1" value="65" oninput="document.getElementById('prev-val-display').textContent='$'+this.value+'B'">
-              <span class="range-val" id="prev-val-display">$65B</span>
+              <input type="range" id="prev-val" min="1" max="500" step="1" value="43" oninput="document.getElementById('prev-val-display').textContent='$'+this.value+'B'">
+              <span class="range-val" id="prev-val-display">$43B</span>
             </div>
           </div>
           <div class="form-group">
             <label>GDELT Event Count</label>
             <div class="range-row">
-              <input type="range" id="events" min="0" max="20000" step="100" value="5000" oninput="document.getElementById('events-val').textContent=parseInt(this.value).toLocaleString()">
-              <span class="range-val" id="events-val">5,000</span>
+              <input type="range" id="events" min="0" max="20000" step="100" value="100" oninput="document.getElementById('events-val').textContent=parseInt(this.value).toLocaleString()">
+              <span class="range-val" id="events-val">100</span>
             </div>
           </div>
           <div class="form-group">
             <label>Average News Tone</label>
             <div class="range-row">
-              <input type="range" id="tone" min="-10" max="10" step="0.1" value="-1.2" oninput="document.getElementById('tone-val').textContent=parseFloat(this.value).toFixed(1)">
-              <span class="range-val" id="tone-val">-1.2</span>
+              <input type="range" id="tone" min="-10" max="10" step="0.1" value="-0.5" oninput="document.getElementById('tone-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span class="range-val" id="tone-val">-0.5</span>
             </div>
           </div>
           <div class="form-group">
             <label>Goldstein Conflict Scale</label>
             <div class="range-row">
-              <input type="range" id="goldstein" min="-10" max="10" step="0.1" value="0.9" oninput="document.getElementById('gold-val').textContent=parseFloat(this.value).toFixed(1)">
-              <span class="range-val" id="gold-val">0.9</span>
+              <input type="range" id="goldstein" min="-10" max="10" step="0.1" value="1.5" oninput="document.getElementById('gold-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span class="range-val" id="gold-val">1.5</span>
             </div>
           </div>
           <button class="btn" id="score-btn" onclick="getScore()">
@@ -185,6 +201,7 @@
             <span class="spinner"></span>
           </button>
 
+          <!-- RESULT CARD -->
           <div class="result-card" id="result-card">
             <div class="score-row">
               <div>
@@ -193,9 +210,7 @@
               </div>
               <div id="risk-badge" class="risk-badge">--</div>
             </div>
-            <div class="score-bar-wrap">
-              <div class="score-bar" id="score-bar" style="width:0%"></div>
-            </div>
+            <div class="score-bar-wrap"><div class="score-bar" id="score-bar" style="width:0%"></div></div>
             <div class="metrics-grid">
               <div class="metric"><div class="metric-label">ML Probability</div><div class="metric-val mono" id="ml-prob">--</div></div>
               <div class="metric"><div class="metric-label">KG Risk Events</div><div class="metric-val mono" id="kg-events">--</div></div>
@@ -215,19 +230,27 @@
               <div class="reasoning-summary" id="reasoning-summary"></div>
               <div id="reasoning-drivers"></div>
               <div id="reasoning-positives"></div>
-              <div class="dominant-box">
-                Dominant factor: <span id="dominant-factor" style="font-family:var(--mono);color:var(--accent)"></span>
-              </div>
+              <div class="dominant-box">Dominant factor: <span id="dominant-factor" style="font-family:var(--mono);color:var(--accent)"></span></div>
+            </div>
+
+            <!-- LIVE NEWS -->
+            <div class="section-divider" id="news-section" style="display:none">
+              <div class="section-title">📰 Live News — Last 7 Days</div>
+              <div id="news-items"></div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px">Source: GDELT DOC 2.0 API · Updated on each query</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div>
+    <!-- RIGHT PANEL -->
+    <div class="right-col">
+      <!-- RISK MAP -->
       <div class="map-panel">
         <div class="map-header">
-          <div class="map-title">🗺️ Global Supply Chain Risk Map</div>
+          <div class="map-title">🗺️ Risk Score Map</div>
+          <div class="map-hint">👆 Click any country dot to score it</div>
           <div class="map-legend">
             <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div>Low</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div>Medium</div>
@@ -237,6 +260,28 @@
         <div id="world-map"></div>
       </div>
 
+      <!-- ROUTE MAP -->
+      <div class="map-panel">
+        <div class="map-header">
+          <div class="map-title">🚢 Live Trade Route Map</div>
+          <div class="map-hint">🖱️ Hover lines for route details</div>
+        </div>
+        <div class="route-filter-bar">
+          <button class="filter-btn active" onclick="filterRouteMap('All')">All</button>
+          <button class="filter-btn" onclick="filterRouteMap('Semiconductors')">💻 Semiconductors</button>
+          <button class="filter-btn" onclick="filterRouteMap('Computers')">🖥️ Computers</button>
+          <button class="filter-btn" onclick="filterRouteMap('Pharmaceuticals')">💊 Pharmaceuticals</button>
+          <button class="filter-btn" onclick="filterRouteMap('Vehicles')">🚗 Vehicles</button>
+        </div>
+        <div class="route-stats">
+          <div class="route-stat">Routes: <span id="route-count">0</span></div>
+          <div class="route-stat">Min value: <span>$1B+</span></div>
+          <div class="route-stat">Total: <span id="route-total">$0</span></div>
+        </div>
+        <div id="route-map"></div>
+      </div>
+
+      <!-- HISTORY -->
       <div class="history-panel">
         <div class="history-header">📋 Risk Score History</div>
         <table>
@@ -244,7 +289,7 @@
             <tr><th>Country</th><th>Risk Score</th><th>Level</th><th>ML Prob</th><th>KG Events</th><th>Time</th></tr>
           </thead>
           <tbody id="history-body">
-            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No scores calculated yet.</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Click a country on the map or use the calculator.</td></tr>
           </tbody>
         </table>
       </div>
@@ -258,127 +303,358 @@ const countryNames = {
   JPN:'Japan', KOR:'South Korea', GBR:'United Kingdom',
   FRA:'France', THA:'Thailand', MYS:'Malaysia'
 };
+const countryFlags = {
+  CHN:'🇨🇳', USA:'🇺🇸', DEU:'🇩🇪', IND:'🇮🇳', JPN:'🇯🇵',
+  KOR:'🇰🇷', GBR:'🇬🇧', FRA:'🇫🇷', THA:'🇹🇭', MYS:'🇲🇾'
+};
+const countryCoords = {
+  CHN:[104,35], USA:[-100,38], DEU:[10,51], IND:[78,22],
+  JPN:[138,36], KOR:[127,37], GBR:[-2,54], FRA:[2,46],
+  THA:[101,15], MYS:[110,4]
+};
+const countryDefaults = {
+  CHN:{lpi:3.61,prev:65,events:8867,tone:-1.2,gold:0.99},
+  USA:{lpi:3.89,prev:120,events:5000,tone:-0.8,gold:1.2},
+  DEU:{lpi:4.20,prev:43,events:100,tone:-0.5,gold:1.5},
+  IND:{lpi:3.18,prev:18,events:1200,tone:-1.5,gold:0.5},
+  JPN:{lpi:4.03,prev:87,events:300,tone:-0.3,gold:2.0},
+  KOR:{lpi:3.59,prev:68,events:400,tone:-0.9,gold:1.1},
+  GBR:{lpi:3.99,prev:30,events:2000,tone:-1.8,gold:0.8},
+  FRA:{lpi:3.84,prev:28,events:800,tone:-1.1,gold:1.0},
+  THA:{lpi:3.41,prev:22,events:600,tone:-1.0,gold:0.7},
+  MYS:{lpi:3.22,prev:10,events:500,tone:-0.7,gold:0.9}
+};
+const productColors = {
+  'Semiconductors':'#3b82f6','Computers':'#06b6d4',
+  'Pharmaceuticals':'#10b981','Vehicles':'#f59e0b'
+};
 
 let mapScores = {};
+let allRoutes = [];
+let currentRouteFilter = 'All';
 
-function initMap() {
-  Plotly.newPlot('world-map', [{
-    type:'choropleth', locationmode:'ISO-3',
-    locations:[], z:[], text:[],
-    colorscale:[[0,'#10b981'],[0.5,'#f59e0b'],[1,'#ef4444']],
-    zmin:0, zmax:100, showscale:true,
-    colorbar:{ title:{text:'Risk Score',font:{color:'#94a3b8',size:11}}, tickfont:{color:'#94a3b8',size:10}, bgcolor:'rgba(0,0,0,0)', bordercolor:'#1e2d45', thickness:12 },
-    marker:{ line:{ color:'#1e2d45', width:0.5 } }
-  }], {
-    geo:{ showframe:false, showcoastlines:true, coastlinecolor:'#1e2d45', showland:true, landcolor:'#111827', showocean:true, oceancolor:'#0a0f1e', showcountries:true, countrycolor:'#1e2d45', bgcolor:'#0a0f1e', projection:{type:'natural earth'} },
-    paper_bgcolor:'#111827', plot_bgcolor:'#111827',
-    margin:{t:10,b:10,l:10,r:10}, font:{color:'#94a3b8'}
-  }, { displayModeBar:false, responsive:true });
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function updateMap(code, score) {
+function getRoutePoints(fromCoord, toCoord, steps=30) {
+  const [lon1, lat1] = fromCoord;
+  const [lon2, lat2] = toCoord;
+  let lons = [], lats = [];
+  const isAsiaPacific = (lon1 > 50 && lon2 < -50) || (lon2 > 50 && lon1 < -50);
+  if (isAsiaPacific) {
+    let l1 = lon1, l2 = lon2;
+    if (l1 > 0 && l2 < 0) l2 += 360;
+    if (l2 > 0 && l1 < 0) l1 += 360;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      let lon = l1 + t * (l2 - l1);
+      if (lon > 180) lon -= 360;
+      lons.push(lon);
+      lats.push(lat1 + t * (lat2 - lat1) + Math.sin(Math.PI * t) * 8);
+    }
+  } else {
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      lons.push(lon1 + t * (lon2 - lon1));
+      lats.push(lat1 + t * (lat2 - lat1) + Math.sin(Math.PI * t) * 6);
+    }
+  }
+  return { lons, lats };
+}
+
+// ── RISK MAP ──────────────────────────────────────────
+function initRiskMap() {
+  const locs = Object.keys(countryNames);
+  Plotly.newPlot('world-map', [
+    {
+      type:'choropleth', locationmode:'ISO-3',
+      locations:[], z:[], text:[],
+      colorscale:[[0,'#10b981'],[0.5,'#f59e0b'],[1,'#ef4444']],
+      zmin:0, zmax:100, showscale:true,
+      colorbar:{ title:{text:'Risk',font:{color:'#94a3b8',size:10}}, tickfont:{color:'#94a3b8',size:10}, bgcolor:'rgba(0,0,0,0)', bordercolor:'#1e2d45', thickness:10 },
+      marker:{ line:{ color:'#1e2d45', width:0.5 } },
+      hovertemplate:'<b>%{text}</b><extra></extra>'
+    },
+    {
+      type:'scattergeo', mode:'markers+text',
+      lon: locs.map(c => countryCoords[c][0]),
+      lat: locs.map(c => countryCoords[c][1]),
+      text: locs,
+      textposition:'top center',
+      textfont:{ size:9, color:'#94a3b8' },
+      marker:{ size:10, color:'#3b82f6', line:{ color:'#0a0f1e', width:1.5 } },
+      hoverinfo:'text',
+      hovertext: locs.map(c => `${countryFlags[c]} ${countryNames[c]}<br>Click to score`),
+      customdata: locs,
+      showlegend:false
+    }
+  ], {
+    geo:{ showframe:false, showcoastlines:true, coastlinecolor:'#1e2d45', showland:true, landcolor:'#111827', showocean:true, oceancolor:'#0a0f1e', showcountries:true, countrycolor:'#1e2d45', bgcolor:'#0a0f1e', projection:{type:'natural earth'} },
+    paper_bgcolor:'#111827', plot_bgcolor:'#111827',
+    margin:{t:0,b:0,l:0,r:0}, font:{color:'#94a3b8'},
+    hoverlabel:{ bgcolor:'#1a2235', bordercolor:'#3b82f6', font:{color:'#f1f5f9',size:12} }
+  }, {displayModeBar:false, responsive:true});
+
+  document.getElementById('world-map').on('plotly_click', function(d) {
+    if (!d || !d.points || !d.points[0]) return;
+    const pt = d.points[0];
+    const iso = pt.customdata || pt.location;
+    if (iso && countryNames[iso]) {
+      showToast(`📍 Scoring ${countryFlags[iso]} ${countryNames[iso]}...`);
+      selectCountryAndScore(iso);
+    } else {
+      showToast('ℹ️ Click one of the blue country dots');
+    }
+  });
+}
+
+function updateRiskMap(code, score) {
   mapScores[code] = score;
   Plotly.update('world-map', {
     locations:[Object.keys(mapScores)],
     z:[Object.values(mapScores)],
-    text:[Object.keys(mapScores).map(c => `${countryNames[c]}<br>Risk: ${mapScores[c]}/100`)]
+    text:[Object.keys(mapScores).map(c=>`<b>${countryFlags[c]} ${countryNames[c]}</b><br>Risk: ${mapScores[c]}/100`)]
   }, {}, [0]);
+  const locs = Object.keys(countryNames);
+  const colors = locs.map(c => mapScores[c]>=70?'#ef4444':mapScores[c]>=40?'#f59e0b':mapScores[c]?'#10b981':'#3b82f6');
+  const sizes = locs.map(c => mapScores[c] ? 12 : 9);
+  Plotly.update('world-map', {'marker.color':[colors],'marker.size':[sizes]}, {}, [1]);
+}
+
+// ── ROUTE MAP ─────────────────────────────────────────
+async function initRouteMap() {
+  try {
+    const res = await fetch('/trade-routes');
+    if (!res.ok) throw new Error('Routes API failed');
+    const data = await res.json();
+    allRoutes = (data.routes || []).filter(r => r.value_usd >= 1e9);
+    renderRouteMap('All');
+  } catch(e) {
+    console.error('Route map error:', e);
+  }
+}
+
+function filterRouteMap(product) {
+  currentRouteFilter = product;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    const label = b.textContent.replace(/[^\w\s]/g,'').trim();
+    b.classList.toggle('active', label === product || (product==='All' && label==='All'));
+  });
+  renderRouteMap(product);
+}
+
+function renderRouteMap(filter) {
+  const routes = filter === 'All' ? allRoutes : allRoutes.filter(r => r.product === filter);
+  document.getElementById('route-count').textContent = routes.length;
+  const totalVal = routes.reduce((s,r) => s + (r.value_usd||0), 0);
+  document.getElementById('route-total').textContent = '$'+(totalVal/1e12).toFixed(1)+'T';
+
+  const traces = [];
+  routes.forEach(route => {
+    const from = countryCoords[route.from];
+    const to = countryCoords[route.to];
+    if (!from || !to) return;
+    const color = productColors[route.product] || '#3b82f6';
+    const {lons, lats} = getRoutePoints(from, to);
+    const val_b = ((route.value_usd||0)/1e9).toFixed(1);
+    const width = Math.max(1, Math.min(4, (route.value_usd||0)/2e10));
+    traces.push({
+      type:'scattergeo', mode:'lines',
+      lon:lons, lat:lats,
+      line:{width, color}, opacity:0.65,
+      hoverinfo:'text',
+      hovertext:`<b>${countryFlags[route.from]||''} ${route.from} → ${countryFlags[route.to]||''} ${route.to}</b><br>📦 ${route.product}<br>💰 $${val_b}B (${route.year})<br>🚢 ${route.mode}`,
+      showlegend:false
+    });
+  });
+
+  Object.entries(countryCoords).forEach(([code, coords]) => {
+    const score = mapScores[code];
+    const color = score>=70?'#ef4444':score>=40?'#f59e0b':score?'#10b981':'#64748b';
+    traces.push({
+      type:'scattergeo', mode:'markers+text',
+      lon:[coords[0]], lat:[coords[1]],
+      text:[code], textposition:'top center',
+      textfont:{size:9, color:'#94a3b8'},
+      marker:{size:score?12:8, color, line:{color:'#0a0f1e', width:1.5}},
+      hoverinfo:'text',
+      hovertext: score ? `<b>${countryFlags[code]} ${countryNames[code]}</b><br>Risk: ${score}/100` : `<b>${countryFlags[code]} ${countryNames[code]}</b>`,
+      showlegend:false
+    });
+  });
+
+  Object.entries(productColors).forEach(([product, color]) => {
+    if (filter !== 'All' && filter !== product) return;
+    const cnt = routes.filter(r=>r.product===product).length;
+    traces.push({ type:'scattergeo', mode:'lines', lon:[null], lat:[null], line:{width:2,color}, name:`${product} (${cnt})`, showlegend:true });
+  });
+
+  Plotly.react('route-map', traces, {
+    geo:{ showframe:false, showcoastlines:true, coastlinecolor:'#1e2d45', showland:true, landcolor:'#111827', showocean:true, oceancolor:'#0a0f1e', showcountries:true, countrycolor:'#1e2d45', bgcolor:'#0a0f1e', projection:{type:'natural earth'} },
+    paper_bgcolor:'#111827',
+    legend:{ bgcolor:'rgba(26,34,53,0.9)', bordercolor:'#1e2d45', borderwidth:1, font:{color:'#94a3b8',size:11}, x:0.01, y:0.99 },
+    margin:{t:0,b:0,l:0,r:0}, font:{color:'#94a3b8'},
+    hoverlabel:{ bgcolor:'#1a2235', bordercolor:'#3b82f6', font:{color:'#f1f5f9',size:12} }
+  }, {displayModeBar:false, responsive:true});
+}
+
+// ── SCORING ───────────────────────────────────────────
+function onCountryChange() {
+  const code = document.getElementById('country').value;
+  const d = countryDefaults[code];
+  if (!d) return;
+  document.getElementById('lpi').value = d.lpi;
+  document.getElementById('lpi-val').textContent = d.lpi.toFixed(1);
+  document.getElementById('prev-val').value = d.prev;
+  document.getElementById('prev-val-display').textContent = '$'+d.prev+'B';
+  document.getElementById('events').value = d.events;
+  document.getElementById('events-val').textContent = d.events.toLocaleString();
+  document.getElementById('tone').value = d.tone;
+  document.getElementById('tone-val').textContent = d.tone.toFixed(1);
+  document.getElementById('goldstein').value = d.gold;
+  document.getElementById('gold-val').textContent = d.gold.toFixed(1);
+}
+
+function selectCountryAndScore(code) {
+  document.getElementById('country').value = code;
+  onCountryChange();
+  getScore();
 }
 
 async function getScore() {
   const btn = document.getElementById('score-btn');
   btn.classList.add('loading'); btn.disabled = true;
-
   const code = document.getElementById('country').value;
   const lpi = parseFloat(document.getElementById('lpi').value);
-  const prev = parseFloat(document.getElementById('prev-val').value) * 1e9;
+  const prev = parseFloat(document.getElementById('prev-val').value)*1e9;
   const events = parseInt(document.getElementById('events').value);
   const tone = parseFloat(document.getElementById('tone').value);
   const gold = parseFloat(document.getElementById('goldstein').value);
-
   try {
     const res = await fetch('/risk-score', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ country_code:code, lpi_score:lpi, prev_value:prev, event_count:events, avg_tone:tone, avg_goldstein:gold })
+      body:JSON.stringify({country_code:code,lpi_score:lpi,prev_value:prev,event_count:events,avg_tone:tone,avg_goldstein:gold})
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if (!data || data.risk_score === undefined) throw new Error('Invalid response');
     displayResult(data);
-    updateMap(code, data.risk_score);
+    updateRiskMap(code, data.risk_score);
     addHistory(data);
-  } catch(e) { alert('API Error: ' + e.message); }
-
+    renderRouteMap(currentRouteFilter);
+  } catch(e) {
+    console.error('Score error:', e);
+    showToast('❌ Error: ' + e.message);
+  }
   btn.classList.remove('loading'); btn.disabled = false;
 }
 
 function displayResult(data) {
-  document.getElementById('result-card').classList.add('visible');
-  document.getElementById('score-num').textContent = data.risk_score;
-  document.getElementById('result-country').textContent = data.country_code;
-  document.getElementById('ml-prob').textContent = (data.ml_probability*100).toFixed(1)+'%';
-  document.getElementById('kg-events').textContent = data.kg_risk_events;
-  document.getElementById('kg-severity').textContent = data.kg_avg_severity;
+  try {
+    document.getElementById('result-card').classList.add('visible');
+    document.getElementById('score-num').textContent = data.risk_score || '--';
+    document.getElementById('result-country').textContent = data.country_code || '--';
+    document.getElementById('ml-prob').textContent = data.ml_probability !== undefined ? (data.ml_probability*100).toFixed(1)+'%' : '--';
+    document.getElementById('kg-events').textContent = data.kg_risk_events !== undefined ? data.kg_risk_events : '--';
+    document.getElementById('kg-severity').textContent = data.kg_avg_severity !== undefined ? data.kg_avg_severity : '--';
 
-  const badge = document.getElementById('risk-badge');
-  badge.textContent = data.risk_level;
-  badge.className = 'risk-badge risk-' + data.risk_level;
+    const badge = document.getElementById('risk-badge');
+    badge.textContent = data.risk_level || '--';
+    badge.className = 'risk-badge' + (data.risk_level ? ' risk-'+data.risk_level : '');
 
-  const color = data.risk_score >= 70 ? '#ef4444' : data.risk_score >= 40 ? '#f59e0b' : '#10b981';
-  const bar = document.getElementById('score-bar');
-  bar.style.width = data.risk_score + '%';
-  bar.style.background = `linear-gradient(90deg,${color}88,${color})`;
-  document.getElementById('score-num').style.color = color;
+    const color = (data.risk_score||0)>=70?'#ef4444':(data.risk_score||0)>=40?'#f59e0b':'#10b981';
+    document.getElementById('score-bar').style.width = (data.risk_score||0)+'%';
+    document.getElementById('score-bar').style.background = `linear-gradient(90deg,${color}88,${color})`;
+    document.getElementById('score-num').style.color = color;
 
-  // Confluence
-  const confSection = document.getElementById('confluence-section');
-  const confItems = document.getElementById('confluence-items');
-  if (data.confluence_inputs && data.confluence_inputs.length > 0) {
-    confSection.style.display = 'block';
-    confItems.innerHTML = data.confluence_inputs.map(c => {
-      const rc = c.source_risk > 20 ? '#ef4444' : c.source_risk > 5 ? '#f59e0b' : '#10b981';
-      return `<div class="confluence-item">
-        <div><div class="confluence-source">${c.source}</div><div class="confluence-product">${c.product} → ${c.finished_product}</div></div>
-        <div class="confluence-risk" style="background:${rc}22;color:${rc};border:1px solid ${rc}44">${c.source_risk} events</div>
-      </div>`;
-    }).join('');
-  } else { confSection.style.display = 'none'; }
+    // Confluence
+    const confSection = document.getElementById('confluence-section');
+    if (data.confluence_inputs && data.confluence_inputs.length > 0) {
+      confSection.style.display = 'block';
+      document.getElementById('confluence-items').innerHTML = data.confluence_inputs.map(c => {
+        const rc = (c.source_risk||0)>20?'#ef4444':(c.source_risk||0)>5?'#f59e0b':'#10b981';
+        return `<div class="confluence-item"><div><div class="confluence-source">${c.source||''}</div><div class="confluence-product">${c.product||''} → ${c.finished_product||''}</div></div><div class="confluence-risk" style="background:${rc}22;color:${rc};border:1px solid ${rc}44">${c.source_risk||0} events</div></div>`;
+      }).join('');
+    } else confSection.style.display = 'none';
 
-  // Reasoning
-  if (data.reasoning) {
-    document.getElementById('reasoning-section').style.display = 'block';
-    document.getElementById('reasoning-summary').textContent = data.reasoning.summary;
-    document.getElementById('dominant-factor').textContent = data.reasoning.dominant_factor;
+    // Reasoning
+    const reasoningSection = document.getElementById('reasoning-section');
+    if (data.reasoning) {
+      reasoningSection.style.display = 'block';
+      document.getElementById('reasoning-summary').textContent = data.reasoning.summary || '';
+      document.getElementById('dominant-factor').textContent = data.reasoning.dominant_factor || '';
+      const drivers = data.reasoning.risk_drivers || [];
+      document.getElementById('reasoning-drivers').innerHTML = drivers.length > 0
+        ? '<div class="driver-label" style="color:#ef4444">⚠ Risk Drivers</div>' + drivers.map(r=>`<div class="driver-item">${r}</div>`).join('') : '';
+      const positives = data.reasoning.stabilising_factors || [];
+      document.getElementById('reasoning-positives').innerHTML = positives.length > 0
+        ? '<div class="driver-label" style="color:#10b981">✓ Stabilising Factors</div>' + positives.map(r=>`<div class="positive-item">${r}</div>`).join('') : '';
+    } else reasoningSection.style.display = 'none';
 
-    const driversEl = document.getElementById('reasoning-drivers');
-    driversEl.innerHTML = data.reasoning.risk_drivers.length > 0
-      ? '<div class="driver-label" style="color:#ef4444">⚠ Risk Drivers</div>' +
-        data.reasoning.risk_drivers.map(r => `<div class="driver-item">${r}</div>`).join('')
-      : '';
-
-    const posEl = document.getElementById('reasoning-positives');
-    posEl.innerHTML = data.reasoning.stabilising_factors.length > 0
-      ? '<div class="driver-label" style="color:#10b981">✓ Stabilising Factors</div>' +
-        data.reasoning.stabilising_factors.map(r => `<div class="positive-item">${r}</div>`).join('')
-      : '';
+   // Live news — async so score shows instantly
+    const newsSection = document.getElementById('news-section');
+    const newsItems = document.getElementById('news-items');
+    newsSection.style.display = 'block';
+    newsItems.innerHTML = '<div class="news-loading">📡 Loading live news...</div>';
+    fetch(`/news/${data.country_code}`)
+      .then(r => r.json())
+      .then(nd => {
+        if (nd.news && nd.news.length > 0) {
+          newsItems.innerHTML = nd.news.map(n => {
+            const date = (n.date||'').length >= 8
+              ? `${n.date.slice(0,4)}-${n.date.slice(4,6)}-${n.date.slice(6,8)}`
+              : n.date || '';
+            return `<a href="${n.url||'#'}" target="_blank" class="news-item">
+              <div class="news-title">${n.title||''}</div>
+              <div class="news-meta">${n.source||''} · ${date}</div>
+            </a>`;
+          }).join('');
+        } else {
+          newsItems.innerHTML = '<div class="news-loading">No recent English news found</div>';
+        }
+      })
+      .catch(() => {
+        newsItems.innerHTML = '<div class="news-loading">News temporarily unavailable</div>';
+      });
+      newsSection.style.display = 'block';
+      newsItems.innerHTML = data.live_news.map(n => {
+        const date = (n.date||'').length >= 8
+          ? `${n.date.slice(0,4)}-${n.date.slice(4,6)}-${n.date.slice(6,8)}`
+          : n.date || '';
+        return `<a href="${n.url||'#'}" target="_blank" class="news-item">
+          <div class="news-title">${n.title||'No title'}</div>
+          <div class="news-meta">${n.source||''} · ${date}</div>
+        </a>`;
+      }).join('');
+    
+  } catch(e) {
+    console.error('Display error:', e);
   }
 }
 
 const historyRows = [];
 function addHistory(data) {
-  historyRows.unshift({...data, time: new Date().toLocaleTimeString()});
+  if (!data || !data.country_code) return;
+  historyRows.unshift({...data, time:new Date().toLocaleTimeString()});
   if (historyRows.length > 10) historyRows.pop();
   document.getElementById('history-body').innerHTML = historyRows.map(r =>
     `<tr>
-      <td class="mono">${r.country_code}</td>
-      <td><span class="mono" style="color:${r.risk_score>=70?'#ef4444':r.risk_score>=40?'#f59e0b':'#10b981'}">${r.risk_score}</span></td>
+      <td>${countryFlags[r.country_code]||''} <span class="mono">${r.country_code}</span></td>
+      <td><span class="mono" style="color:${(r.risk_score||0)>=70?'#ef4444':(r.risk_score||0)>=40?'#f59e0b':'#10b981'}">${r.risk_score}</span></td>
       <td><span class="risk-badge risk-${r.risk_level}" style="font-size:11px;padding:3px 10px">${r.risk_level}</span></td>
-      <td class="mono">${(r.ml_probability*100).toFixed(1)}%</td>
-      <td class="mono">${r.kg_risk_events}</td>
+      <td class="mono">${r.ml_probability !== undefined ? (r.ml_probability*100).toFixed(1)+'%' : '--'}</td>
+      <td class="mono">${r.kg_risk_events !== undefined ? r.kg_risk_events : '--'}</td>
       <td style="color:var(--muted);font-size:12px">${r.time}</td>
     </tr>`
   ).join('');
 }
 
-initMap();
+initRiskMap();
+initRouteMap();
 </script>
 </body>
 </html>

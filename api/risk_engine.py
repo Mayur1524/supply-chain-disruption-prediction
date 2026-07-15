@@ -2,6 +2,7 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
@@ -186,23 +187,61 @@ def get_confluence_risk(country_code):
         records = result.data()
         return records if records else []
 
+def get_live_news(country_code):
+    """Fetch live news from GDELT DOC 2.0 API"""
+    COUNTRY_QUERIES = {
+        "CHN": "China supply chain",
+        "USA": "United States supply chain",
+        "DEU": "Germany supply chain",
+        "IND": "India supply chain",
+        "JPN": "Japan supply chain",
+        "KOR": "South Korea supply chain",
+        "GBR": "United Kingdom supply chain",
+        "FRA": "France supply chain",
+        "THA": "Thailand supply chain",
+        "MYS": "Malaysia supply chain"
+    }
+    query = COUNTRY_QUERIES.get(country_code, "supply chain")
+    url = "https://api.gdeltproject.org/api/v2/doc/doc"
+    params = {
+        "query": query+ " sourcelang:english",
+        "mode": "artlist",
+        "maxrecords": 5,
+        "format": "json",
+        "timespan": "7d"
+    }
+    # Try twice with short timeouts
+    for timeout in [8, 15]:
+        try:
+            r = requests.get(url, params=params, timeout=timeout)
+            if r.status_code == 200:
+                articles = r.json().get("articles", [])
+                if articles:
+                    return [{
+                        "title": a.get("title", ""),
+                        "url": a.get("url", ""),
+                        "source": a.get("domain", ""),
+                        "date": a.get("seendate", "")[:8] if a.get("seendate") else "",
+                    } for a in articles if a.get("title")]
+        except Exception as e:
+            print(f"News attempt failed (timeout={timeout}): {e}")
+            continue
+    return []
+
 def generate_reasoning(country_code, risk_score, risk_level,
                         ml_prob, kg_data, confluence_inputs,
                         lpi_score, event_count, avg_tone, avg_goldstein):
-    
-    # Get country-specific real-world context
+
     context = COUNTRY_CONTEXT.get(country_code, {})
     country_events = context.get("events", [])
     country_positives = context.get("positives", [])
-    
+
     reasons = []
     positives = []
 
-    # Add real-world country-specific events first
     if country_events:
         reasons.extend(country_events)
 
-    # Add technical ML/KG reasons
     if ml_prob > 0.7:
         reasons.append(f"ML model confirms high disruption probability ({ml_prob*100:.1f}%) based on historical trade pattern analysis")
     elif ml_prob > 0.4:
@@ -216,7 +255,6 @@ def generate_reasoning(country_code, risk_score, risk_level,
     if kg_data["avg_severity"] < -8:
         reasons.append(f"Average event severity is critically high ({kg_data['avg_severity']:.2f}/−10) — extreme conflict-level incidents detected")
 
-    # Confluence reasoning
     if confluence_inputs:
         high_risk = [c for c in confluence_inputs if c["source_risk"] > 20]
         med_risk = [c for c in confluence_inputs if 5 < c["source_risk"] <= 20]
@@ -232,25 +270,21 @@ def generate_reasoning(country_code, risk_score, risk_level,
                 f"shows {inp['source_risk']} risk events"
             )
 
-    # Stabilising factors
     positives.extend(country_positives)
-    
+
     if lpi_score >= 3.5:
         positives.append(f"Strong logistics performance ({lpi_score:.1f}/5.0) provides supply chain resilience")
-    
     if avg_tone > -2:
         positives.append(f"News sentiment is relatively neutral (tone: {avg_tone:.1f})")
-    
     if kg_data["risk_events"] == 0:
         positives.append("Knowledge Graph shows no high-severity geopolitical events")
 
-    # Summary
     if risk_level == "HIGH":
-        summary = f"HIGH RISK — Multiple real-world disruption factors identified for this country in 2021-2023, confirmed by Knowledge Graph topology analysis and ML pattern recognition."
+        summary = "HIGH RISK — Multiple real-world disruption factors identified, confirmed by Knowledge Graph topology analysis and ML pattern recognition."
     elif risk_level == "MEDIUM":
-        summary = f"MEDIUM RISK — Some geopolitical and economic disruption factors present but supply chain remains partially resilient. Monitor key risk drivers closely."
+        summary = "MEDIUM RISK — Moderate disruption signals present. Monitor key risk drivers closely."
     else:
-        summary = f"LOW RISK — Supply chain appears relatively stable. Limited geopolitical disruption events and favourable trade patterns detected."
+        summary = "LOW RISK — Supply chain appears relatively stable. Limited disruption events detected."
 
     return {
         "summary": summary,
@@ -261,6 +295,7 @@ def generate_reasoning(country_code, risk_score, risk_level,
 
 def hybrid_risk_score(country_code, lpi_score, prev_value,
                       event_count, avg_tone, avg_goldstein):
+
     # ML prediction
     features = np.array([[prev_value, lpi_score,
                           event_count, avg_tone, avg_goldstein]])
@@ -282,15 +317,21 @@ def hybrid_risk_score(country_code, lpi_score, prev_value,
     else:
         level = "LOW"
 
-    # Confluence check
+    # Confluence
     confluence = get_confluence_risk(country_code)
 
-    # Generate reasoning
+    # Reasoning
     reasoning = generate_reasoning(
         country_code, final_score, level,
         ml_prob, kg_data, confluence,
         lpi_score, event_count, avg_tone, avg_goldstein
     )
+
+   # Live news — fetch with short timeout, return empty if slow
+    try:
+        live_news = get_live_news(country_code)
+    except:
+        live_news = []
 
     return {
         "country_code": country_code,
@@ -300,5 +341,6 @@ def hybrid_risk_score(country_code, lpi_score, prev_value,
         "kg_risk_events": kg_data["risk_events"],
         "kg_avg_severity": kg_data["avg_severity"],
         "confluence_inputs": confluence,
-        "reasoning": reasoning
+        "reasoning": reasoning,
+        "live_news": live_news
     }
