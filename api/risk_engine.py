@@ -188,44 +188,67 @@ def get_confluence_risk(country_code):
         return records if records else []
 
 def get_live_news(country_code):
-    """Fetch live news from GDELT DOC 2.0 API"""
-    COUNTRY_QUERIES = {
-        "CHN": "China supply chain",
-        "USA": "United States supply chain",
-        "DEU": "Germany supply chain",
-        "IND": "India supply chain",
-        "JPN": "Japan supply chain",
-        "KOR": "South Korea supply chain",
-        "GBR": "United Kingdom supply chain",
-        "FRA": "France supply chain",
-        "THA": "Thailand supply chain",
-        "MYS": "Malaysia supply chain"
+    """Fetch supply chain news from NewsAPI"""
+    import os
+    from datetime import datetime, timedelta
+
+    COUNTRY_NAMES = {
+        "CHN": "China", "USA": "America", "DEU": "Germany",
+        "IND": "India", "JPN": "Japan", "KOR": "Korea",
+        "GBR": "Britain OR UK", "FRA": "France",
+        "THA": "Thailand", "MYS": "Malaysia"
     }
-    query = COUNTRY_QUERIES.get(country_code, "supply chain")
-    url = "https://api.gdeltproject.org/api/v2/doc/doc"
-    params = {
-        "query": query+ " sourcelang:english",
-        "mode": "artlist",
-        "maxrecords": 5,
-        "format": "json",
-        "timespan": "7d"
-    }
-    # Try twice with short timeouts
-    for timeout in [8, 15]:
+
+    country = COUNTRY_NAMES.get(country_code, "")
+    api_key = os.getenv("NEWS_API_KEY")
+    if not api_key:
+        return []
+
+    # Date range — last 30 days
+    from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+
+    # Two attempts — strict then broad
+    queries = [
+        f'({country}) AND (supply chain OR trade OR exports OR shipping OR tariff OR logistics)',
+        f'supply chain disruption trade',
+    ]
+
+    for query in queries:
         try:
-            r = requests.get(url, params=params, timeout=timeout)
+            r = requests.get(
+                "https://newsapi.org/v2/everything",
+                params={
+                    "q": query,
+                    "language": "en",
+                    "from": from_date,
+                    "sortBy": "publishedAt",
+                    "pageSize": 10,
+                    "apiKey": api_key
+                },
+                timeout=10
+            )
             if r.status_code == 200:
                 articles = r.json().get("articles", [])
-                if articles:
-                    return [{
-                        "title": a.get("title", ""),
+                results = []
+                for a in articles:
+                    title = a.get("title", "") or ""
+                    if not title or "[Removed]" in title:
+                        continue
+                    results.append({
+                        "title": title,
                         "url": a.get("url", ""),
-                        "source": a.get("domain", ""),
-                        "date": a.get("seendate", "")[:8] if a.get("seendate") else "",
-                    } for a in articles if a.get("title")]
+                        "source": a.get("source", {}).get("name", ""),
+                        "date": (a.get("publishedAt", "") or "")[:10]
+                    })
+                    if len(results) == 5:
+                        break
+                if results:
+                    return results
+            else:
+                print(f"NewsAPI {r.status_code}: {r.text[:100]}")
         except Exception as e:
-            print(f"News attempt failed (timeout={timeout}): {e}")
-            continue
+            print(f"NewsAPI error: {e}")
+
     return []
 
 def generate_reasoning(country_code, risk_score, risk_level,

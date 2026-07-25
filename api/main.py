@@ -119,3 +119,8 @@ def get_trade_routes():
             })
 
     return {"routes": routes, "total": len(routes)}
+@app.get("/news/{country_code}")
+def get_news(country_code: str):
+    from risk_engine import get_live_news
+    news = get_live_news(country_code)
+    return {"news": news}
