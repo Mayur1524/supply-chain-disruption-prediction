@@ -2,7 +2,6 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
@@ -187,69 +186,6 @@ def get_confluence_risk(country_code):
         records = result.data()
         return records if records else []
 
-def get_live_news(country_code):
-    """Fetch supply chain news from NewsAPI"""
-    import os
-    from datetime import datetime, timedelta
-
-    COUNTRY_NAMES = {
-        "CHN": "China", "USA": "America", "DEU": "Germany",
-        "IND": "India", "JPN": "Japan", "KOR": "Korea",
-        "GBR": "Britain OR UK", "FRA": "France",
-        "THA": "Thailand", "MYS": "Malaysia"
-    }
-
-    country = COUNTRY_NAMES.get(country_code, "")
-    api_key = os.getenv("NEWS_API_KEY")
-    if not api_key:
-        return []
-
-    # Date range — last 30 days
-    from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-
-    # Two attempts — strict then broad
-    queries = [
-        f'({country}) AND (supply chain OR trade OR exports OR shipping OR tariff OR logistics)',
-        f'supply chain disruption trade',
-    ]
-
-    for query in queries:
-        try:
-            r = requests.get(
-                "https://newsapi.org/v2/everything",
-                params={
-                    "q": query,
-                    "language": "en",
-                    "from": from_date,
-                    "sortBy": "publishedAt",
-                    "pageSize": 10,
-                    "apiKey": api_key
-                },
-                timeout=10
-            )
-            if r.status_code == 200:
-                articles = r.json().get("articles", [])
-                results = []
-                for a in articles:
-                    title = a.get("title", "") or ""
-                    if not title or "[Removed]" in title:
-                        continue
-                    results.append({
-                        "title": title,
-                        "url": a.get("url", ""),
-                        "source": a.get("source", {}).get("name", ""),
-                        "date": (a.get("publishedAt", "") or "")[:10]
-                    })
-                    if len(results) == 5:
-                        break
-                if results:
-                    return results
-            else:
-                print(f"NewsAPI {r.status_code}: {r.text[:100]}")
-        except Exception as e:
-            print(f"NewsAPI error: {e}")
-
-    return []
 
 def generate_reasoning(country_code, risk_score, risk_level,
                         ml_prob, kg_data, confluence_inputs,
@@ -343,18 +279,12 @@ def hybrid_risk_score(country_code, lpi_score, prev_value,
     # Confluence
     confluence = get_confluence_risk(country_code)
 
-    # Reasoning
+   # Reasoning
     reasoning = generate_reasoning(
         country_code, final_score, level,
         ml_prob, kg_data, confluence,
         lpi_score, event_count, avg_tone, avg_goldstein
     )
-
-   # Live news — fetch with short timeout, return empty if slow
-    try:
-        live_news = get_live_news(country_code)
-    except:
-        live_news = []
 
     return {
         "country_code": country_code,
@@ -364,6 +294,5 @@ def hybrid_risk_score(country_code, lpi_score, prev_value,
         "kg_risk_events": kg_data["risk_events"],
         "kg_avg_severity": kg_data["avg_severity"],
         "confluence_inputs": confluence,
-        "reasoning": reasoning,
-        "live_news": live_news
+        "reasoning": reasoning
     }
