@@ -1,3 +1,18 @@
+# Only these 10 countries are in scope. GDELT sometimes reports raw UN
+# numeric codes (e.g. "276" for Germany) or non-country actor-type codes
+# (e.g. "GOV", "ISRMIL") in the same field — this mapping converts the
+# former to the correct ISO3 code already used elsewhere in the graph,
+# and lets us skip the latter entirely.
+UN_TO_ISO = {
+    "156": "CHN", "840": "USA", "276": "DEU", "356": "IND",
+    "392": "JPN", "410": "KOR", "826": "GBR", "250": "FRA",
+    "764": "THA", "458": "MYS",
+}
+
+# GDELT's actor1_country already uses ISO3 codes directly (unlike Comtrade's
+# numeric reporter_code) — so here we just need a whitelist of our 10
+# in-scope countries, no conversion needed.
+VALID_ISO3 = set(UN_TO_ISO.values())
 import os
 import pandas as pd
 from dotenv import load_dotenv
@@ -11,18 +26,23 @@ driver = GraphDatabase.driver(
 )
 
 # ── 1. Load Countries from LPI ────────────────────────
+# ── 1. Load Countries from LPI ────────────────────────
 print("Loading countries...")
 lpi = pd.read_csv("data/lpi_clean.csv")
 
 with driver.session(database="supplychain") as s:
     s.run("MATCH (n) DETACH DELETE n")  # clear existing
+    loaded_count = 0
     for _, row in lpi.iterrows():
+        if row["code"] not in UN_TO_ISO.values():   # only our 10
+            continue
         s.run("""
             MERGE (c:Country {code: $code})
             SET c.name = $name, c.lpi_score = $lpi
         """, code=row["code"], name=row["country"], lpi=float(row["lpi_score"]))
+        loaded_count += 1
 
-print(f"  Loaded {len(lpi)} country nodes")
+print(f"  Loaded {loaded_count} country nodes")
 
 # ── 2. Load Trade Routes from Comtrade ────────────────
 print("Loading trade routes...")
@@ -37,6 +57,10 @@ product_names = {
 
 with driver.session(database="supplychain") as s:
     for _, row in ct.iterrows():
+        iso_code = UN_TO_ISO.get(str(row["reporter_code"]))
+        if iso_code is None:
+            continue   # skip anything outside our 10 countries
+
         s.run("""
             MERGE (p:Product {code: $code})
             SET p.name = $name
@@ -45,14 +69,14 @@ with driver.session(database="supplychain") as s:
 
         s.run("""
             MERGE (c:Country {code: $code})
-        """, code=str(row["reporter_code"]))
+        """, code=iso_code)
 
         s.run("""
             MATCH (c:Country {code: $country_code})
             MATCH (p:Product {code: $prod_code})
             MERGE (c)-[r:EXPORTS {year: $year}]->(p)
             SET r.value_usd = $value
-        """, country_code=str(row["reporter_code"]),
+        """, country_code=iso_code,
              prod_code=int(row["product_code"]),
              year=int(row["year"]),
              value=float(row["value_usd"]))
@@ -66,10 +90,24 @@ gdelt = pd.read_csv("data/gdelt_clean.csv")
 gdelt_filtered = gdelt[
     (gdelt["avg_tone"] < -5) |
     (gdelt["goldstein"] < -5)
-].head(5000)
+]
+
+loaded_count = 0
+skipped_count = 0
 
 with driver.session(database="supplychain") as s:
     for _, row in gdelt_filtered.iterrows():
+        if loaded_count >= 5000:
+            break
+
+        # Resolve the raw GDELT code to one of our 10 ISO3 country codes.
+        # Skip anything that doesn't resolve — this excludes both raw UN
+        # numeric duplicates and non-country actor-type codes.
+        iso_code = str(row["actor1_country"])
+        if iso_code not in VALID_ISO3:
+            skipped_count += 1
+            continue
+
         s.run("""
             MERGE (c:Country {code: $code})
             CREATE (e:Event {
@@ -81,7 +119,7 @@ with driver.session(database="supplychain") as s:
                 num_articles: $articles
             })
             CREATE (c)-[:AFFECTED_BY]->(e)
-        """, code=str(row["actor1_country"]),
+        """, code=iso_code,
              eid=int(row["event_id"]),
              date=int(row["date"]),
              ecode=str(row["event_code"]),
@@ -89,7 +127,9 @@ with driver.session(database="supplychain") as s:
              tone=float(row["avg_tone"]),
              articles=int(row["num_articles"]))
 
-print(f"  Loaded {len(gdelt_filtered)} event nodes")
+        loaded_count += 1
+
+print(f"  Loaded {loaded_count} event nodes (skipped {skipped_count} non-scope codes)")
 
 # ── 4. Confluence Provenance: multiple inputs converging at one destination ──
 print("Loading confluence provenance example...")
@@ -112,7 +152,7 @@ with driver.session(database="supplychain") as s:
 
     s.run("""
         MERGE (china:Country {code: "CHN"})
-        MERGE (semi:Product {code: "8541"})
+        MERGE (semi:Product {code: 8541})
         SET semi.name = "Semiconductors"
         MERGE (china)-[:PRODUCES]->(semi)
         MERGE (germany:Country {code: "DEU"})
@@ -131,7 +171,7 @@ with driver.session(database="supplychain") as s:
         MERGE (plastic)-[:CONTRIBUTES_TO]->(fp)
     """)
     s.run("""
-        MATCH (semi:Product {code: "8541"})
+        MATCH (semi:Product {code: 8541})
         MATCH (fp:FinishedProduct {name: "Electronic Device"})
         MERGE (semi)-[:CONTRIBUTES_TO]->(fp)
     """)

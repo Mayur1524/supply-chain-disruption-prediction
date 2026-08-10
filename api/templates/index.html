@@ -40,21 +40,26 @@
     flex-wrap: wrap;
     gap: 8px;
   }
-  .project-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
+.project-title-big {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent2);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+}
   .project-subtitle {
     font-size: 11px;
     color: var(--muted);
     margin-top: 1px;
   }
   .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: flex-end;
+}
   .topbar-meta {
     font-size: 11px;
     color: var(--muted);
@@ -253,43 +258,18 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-inner">
-    <div>
-      <div class="project-title">Supply Chain Disruption Prediction Using Provenance Tracking and Knowledge Reasoning</div>
-      <div class="project-subtitle">MSc Data Science Dissertation · University of Southampton · Supervisor: Dr. Age Chapman</div>
-    </div>
+    <div class="topbar-spacer"></div>
+    <div class="project-title-big">SUPPLY CHAIN DISRUPTION PREDICTION</div>
     <div class="topbar-right">
-      <div class="topbar-meta">
-        Mayur Kumara Swamy · 37481215<br>
-        CatBoost + Neo4j Hybrid Engine
-      </div>
+      <div class="topbar-meta">Mayur Kumara Swamy · 37481215</div>
       <div class="status-dot"><div class="dot"></div>System Online</div>
     </div>
-  </div>
-</div>
-
-<!-- METHODOLOGY BAR -->
-<div class="method-bar">
-  <div class="method-inner">
-    <span class="method-label">Pipeline:</span>
-    <div class="method-step"><span class="icon">📦</span>UN Comtrade (8,896 records)</div>
-    <span class="method-arrow">+</span>
-    <div class="method-step"><span class="icon">🌍</span>GDELT (1.4M events)</div>
-    <span class="method-arrow">+</span>
-    <div class="method-step"><span class="icon">📊</span>World Bank LPI</div>
-    <span class="method-arrow">→</span>
-    <div class="method-step"><span class="icon">🔷</span>Neo4j KG (5,470 nodes)</div>
-    <span class="method-arrow">+</span>
-    <div class="method-step"><span class="icon">🤖</span>CatBoost ML</div>
-    <span class="method-arrow">→</span>
-    <div class="method-step" style="border-color:var(--accent);color:var(--accent2)"><span class="icon">⚡</span>Hybrid Risk Score</div>
-    <div class="formula-box">Score = 0.6×ML + 0.4×KG</div>
   </div>
 </div>
 
 <!-- STATS BAR -->
 <div class="stats-bar">
   <div class="stats-inner">
-    <div class="stat-item"><span class="stat-label-sm">Best model:</span><span class="stat-val-sm good">CatBoost F1=0.699</span></div>
     <div class="stat-item"><span class="stat-label-sm">XGBoost:</span><span class="stat-val-sm info">F1=0.697</span></div>
     <div class="stat-item"><span class="stat-label-sm">Random Forest:</span><span class="stat-val-sm warn">F1=0.606</span></div>
     <div class="stat-item"><span class="stat-label-sm">Train split:</span><span class="stat-val-sm info">2018–2022</span></div>
