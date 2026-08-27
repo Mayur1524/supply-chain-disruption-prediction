@@ -10,9 +10,8 @@ import os
 os.makedirs("ml", exist_ok=True)
 
 UN_TO_ISO = {
-    "156": "CHN", "840": "USA", "276": "DEU", "356": "IND",
-    "392": "JPN", "410": "KOR", "826": "GBR", "250": "FRA",
-    "764": "THA", "458": "MYS",
+    "156": "CHN", "276": "DEU", "392": "JPN", "410": "KOR",
+    "826": "GBR", "764": "THA", "458": "MYS",
 }
 
 print("Building feature dataset...")

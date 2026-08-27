@@ -262,7 +262,7 @@ def hybrid_risk_score(country_code, lpi_score, prev_value,
 
     # KG reasoning
     kg_data = get_kg_risk(country_code)
-    kg_risk_raw = min(kg_data["risk_events"] / 50.0, 1.0)
+    kg_risk_raw = min(kg_data["risk_events"] / 500.0, 1.0)
 
     # Hybrid combination
     hybrid = (0.6 * ml_prob) + (0.4 * kg_risk_raw)

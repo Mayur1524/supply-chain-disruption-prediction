@@ -4,9 +4,8 @@
 # former to the correct ISO3 code already used elsewhere in the graph,
 # and lets us skip the latter entirely.
 UN_TO_ISO = {
-    "156": "CHN", "840": "USA", "276": "DEU", "356": "IND",
-    "392": "JPN", "410": "KOR", "826": "GBR", "250": "FRA",
-    "764": "THA", "458": "MYS",
+    "156": "CHN", "276": "DEU", "392": "JPN", "410": "KOR",
+    "826": "GBR", "764": "THA", "458": "MYS",
 }
 
 # GDELT's actor1_country already uses ISO3 codes directly (unlike Comtrade's

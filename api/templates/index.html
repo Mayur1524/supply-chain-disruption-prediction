@@ -274,7 +274,7 @@
     <div class="stat-item"><span class="stat-label-sm">Random Forest:</span><span class="stat-val-sm warn">F1=0.606</span></div>
     <div class="stat-item"><span class="stat-label-sm">Train split:</span><span class="stat-val-sm info">2018–2022</span></div>
     <div class="stat-item"><span class="stat-label-sm">Test split:</span><span class="stat-val-sm info">2023 (unseen)</span></div>
-    <div class="stat-item"><span class="stat-label-sm">Countries:</span><span class="stat-val-sm info">10</span></div>
+    <div class="stat-item"><span class="stat-label-sm">Countries:</span><span class="stat-val-sm info">7</span></div>
     <div class="stat-item"><span class="stat-label-sm">Products:</span><span class="stat-val-sm info">4 (HS codes)</span></div>
     <div class="stat-item"><span class="stat-label-sm">KG nodes:</span><span class="stat-val-sm info">5,470</span></div>
     <div class="stat-item"><span class="stat-label-sm">Disruption label:</span><span class="stat-val-sm warn">&gt;15% YoY trade drop</span></div>
@@ -294,15 +294,12 @@
       <div class="panel-body">
         <div class="form-group">
           <label>Exporting Country</label>
-          <select id="country" onchange="onCountryChange()">
+            <select id="country" onchange="onCountryChange()">
             <option value="CHN">🇨🇳 China (CHN)</option>
-            <option value="USA">🇺🇸 United States (USA)</option>
             <option value="DEU" selected>🇩🇪 Germany (DEU)</option>
-            <option value="IND">🇮🇳 India (IND)</option>
             <option value="JPN">🇯🇵 Japan (JPN)</option>
             <option value="KOR">🇰🇷 South Korea (KOR)</option>
             <option value="GBR">🇬🇧 United Kingdom (GBR)</option>
-            <option value="FRA">🇫🇷 France (FRA)</option>
             <option value="THA">🇹🇭 Thailand (THA)</option>
             <option value="MYS">🇲🇾 Malaysia (MYS)</option>
           </select>
@@ -467,18 +464,15 @@
 </div>
 
 <script>
-const countryNames={CHN:'China',USA:'United States',DEU:'Germany',IND:'India',JPN:'Japan',KOR:'South Korea',GBR:'United Kingdom',FRA:'France',THA:'Thailand',MYS:'Malaysia'};
-const countryFlags={CHN:'🇨🇳',USA:'🇺🇸',DEU:'🇩🇪',IND:'🇮🇳',JPN:'🇯🇵',KOR:'🇰🇷',GBR:'🇬🇧',FRA:'🇫🇷',THA:'🇹🇭',MYS:'🇲🇾'};
-const countryCoords={CHN:[104,35],USA:[-100,38],DEU:[10,51],IND:[78,22],JPN:[138,36],KOR:[127,37],GBR:[-2,54],FRA:[2,46],THA:[101,15],MYS:[110,4]};
+const countryNames={CHN:'China',DEU:'Germany',JPN:'Japan',KOR:'South Korea',GBR:'United Kingdom',THA:'Thailand',MYS:'Malaysia'};
+const countryFlags={CHN:'🇨🇳',DEU:'🇩🇪',JPN:'🇯🇵',KOR:'🇰🇷',GBR:'🇬🇧',THA:'🇹🇭',MYS:'🇲🇾'};
+const countryCoords={CHN:[104,35],DEU:[10,51],JPN:[138,36],KOR:[127,37],GBR:[-2,54],THA:[101,15],MYS:[110,4]};
 const countryDefaults={
   CHN:{lpi:3.61,prev:65,events:8867,tone:-1.2,gold:0.99},
-  USA:{lpi:3.89,prev:120,events:5000,tone:-0.8,gold:1.2},
   DEU:{lpi:4.20,prev:43,events:100,tone:-0.5,gold:1.5},
-  IND:{lpi:3.18,prev:18,events:1200,tone:-1.5,gold:0.5},
   JPN:{lpi:4.03,prev:87,events:300,tone:-0.3,gold:2.0},
   KOR:{lpi:3.59,prev:68,events:400,tone:-0.9,gold:1.1},
   GBR:{lpi:3.99,prev:30,events:2000,tone:-1.8,gold:0.8},
-  FRA:{lpi:3.84,prev:28,events:800,tone:-1.1,gold:1.0},
   THA:{lpi:3.41,prev:22,events:600,tone:-1.0,gold:0.7},
   MYS:{lpi:3.22,prev:10,events:500,tone:-0.7,gold:0.9}
 };
@@ -544,7 +538,7 @@ function initRiskMap(){
     if(iso&&countryNames[iso]){
       showToast(`Running prediction for ${countryFlags[iso]} ${countryNames[iso]}...`);
       selectCountryAndScore(iso);
-    } else showToast('Select one of the 10 marked countries');
+    } else showToast('Select one of the 7 marked countries');
   });
 }
 
